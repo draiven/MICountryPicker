@@ -9,7 +9,7 @@
 import UIKit
 
 class MICountry: NSObject {
-    let name: String
+    @objc let name: String
     let code: String
     var section: Int?
     let dialCode: String!
@@ -54,7 +54,7 @@ open class MICountryPicker: UITableViewController {
             let displayName = (locale as NSLocale).displayName(forKey: NSLocale.Key.countryCode, value: countryCode)
             let countryData = CallingCodes.filter { $0["code"] == countryCode }
             let country: MICountry
-
+            
             if countryData.count > 0, let dialCode = countryData[0]["dial_code"] {
                 country = MICountry(name: displayName!, code: countryCode, dialCode: dialCode)
             } else {
@@ -106,7 +106,7 @@ open class MICountryPicker: UITableViewController {
     open var didSelectCountryClosure: ((String, String) -> ())?
     open var didSelectCountryWithCallingCodeClosure: ((String, String, String) -> ())?
     open var showCallingCodes = false
-
+    
     convenience public init(completionHandler: @escaping ((String, String) -> ())) {
         self.init()
         self.didSelectCountryClosure = completionHandler
@@ -138,10 +138,28 @@ open class MICountryPicker: UITableViewController {
         
         sections.forEach { (section) -> () in
             section.countries.forEach({ (country) -> () in
-                if country.name.characters.count >= searchText.characters.count {
-                    let result = country.name.compare(searchText, options: [.caseInsensitive, .diacriticInsensitive], range: searchText.characters.startIndex ..< searchText.characters.endIndex)
+                if country.name.count >= searchText.count {
+                    let result = country.name.compare(searchText, options: [.caseInsensitive, .diacriticInsensitive], range: searchText.startIndex ..< searchText.endIndex)
                     if result == .orderedSame {
                         filteredList.append(country)
+                    }
+                }
+                if country.code.count >= searchText.count {
+                    let result = country.code.compare(searchText, options: [.caseInsensitive, .diacriticInsensitive], range: searchText.startIndex ..< searchText.endIndex)
+                    if result == .orderedSame {
+                        filteredList.append(country)
+                    }
+                }
+                if country.dialCode.count >= searchText.count {
+                    if Int(searchText) != nil {
+                        
+                        let dialCodeString = "+"+searchText
+                        if dialCodeString.count <= country.dialCode.count {
+                            let result = country.dialCode.compare(dialCodeString, options: [.caseInsensitive, .diacriticInsensitive], range: dialCodeString.startIndex ..< dialCodeString.endIndex)
+                            if result == .orderedSame {
+                                filteredList.append(country)
+                            }
+                        }
                     }
                 }
             })
@@ -156,14 +174,14 @@ open class MICountryPicker: UITableViewController {
 extension MICountryPicker {
     
     override open func numberOfSections(in tableView: UITableView) -> Int {
-        if searchController.searchBar.text!.characters.count > 0 {
+        if searchController.searchBar.text!.count > 0 {
             return 1
         }
         return sections.count
     }
     
     override open func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if searchController.searchBar.text!.characters.count > 0 {
+        if searchController.searchBar.text!.count > 0 {
             return filteredList.count
         }
         return sections[section].countries.count
@@ -180,19 +198,19 @@ extension MICountryPicker {
         let cell: UITableViewCell! = tempCell
         
         let country: MICountry!
-        if searchController.searchBar.text!.characters.count > 0 {
+        if searchController.searchBar.text!.count > 0 {
             country = filteredList[(indexPath as NSIndexPath).row]
         } else {
             country = sections[(indexPath as NSIndexPath).section].countries[(indexPath as NSIndexPath).row]
             
         }
-
+        
         if showCallingCodes {
             cell.textLabel?.text = country.name + " (" + country.dialCode! + ")"
         } else {
             cell.textLabel?.text = country.name
         }
-
+        
         let bundle = "assets.bundle/"
         cell.imageView!.image = UIImage(named: bundle + country.code.lowercased() + ".png", in: Bundle(for: MICountryPicker.self), compatibleWith: nil)
         return cell
@@ -210,8 +228,8 @@ extension MICountryPicker {
     }
     
     override open func tableView(_ tableView: UITableView,
-        sectionForSectionIndexTitle title: String,
-        at index: Int)
+                                 sectionForSectionIndexTitle title: String,
+                                 at index: Int)
         -> Int {
             return collation.section(forSectionIndexTitle: index)
     }
@@ -224,7 +242,7 @@ extension MICountryPicker {
     override open func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let country: MICountry!
-        if searchController.searchBar.text!.characters.count > 0 {
+        if searchController.searchBar.text!.count > 0 {
             country = filteredList[(indexPath as NSIndexPath).row]
         } else {
             country = sections[(indexPath as NSIndexPath).section].countries[(indexPath as NSIndexPath).row]
